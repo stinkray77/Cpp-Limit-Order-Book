@@ -16,6 +16,7 @@ A simulated high-frequency trading matching engine written in C++.
 ```bash
 g++ main.cpp -o engine
 ./engine
+```
 
 ## Roadmap
 [x] Basic Matching Logic (Vectors)
