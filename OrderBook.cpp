@@ -26,8 +26,15 @@ void OrderBook::print_book() {
 
 
 // Function to add an order
-void OrderBook::add_order(int id, bool is_buy, int price, int quantity) {
-    Order new_order = {id, is_buy, price, quantity};
+void OrderBook::add_order(int id, bool is_buy, int price, int quantity, OrderType type) {
+    // If is market order, willing to pay anything to buy anything
+    if (type == OrderType::MARKET) {
+        if (is_buy) price = std::numeric_limits<int>::max();
+        else        price = 0;
+    }
+    
+    // normal order
+    Order new_order = {id, type, is_buy, price, quantity};
 
     if (is_buy) {
         bids[price].push_back(new_order); // O(log N) insertion
@@ -35,7 +42,25 @@ void OrderBook::add_order(int id, bool is_buy, int price, int quantity) {
         asks[price].push_back(new_order); // O(log N) insertion
     }
 
+    // try to match immediately
     match_orders(); // Check if a trade can happen immediately
+
+    // clean up if not fully filled
+    if (type == OrderType::MARKET) {
+        if (is_buy) {
+            auto it = bids.find(price);
+            if (it != bids.end()) {
+                // assume last added 
+                bids.erase(it);
+            }
+        } else {
+            // same for sells
+            auto it = asks.find(price);
+            if (it != asks.end()) {
+                asks.erase(it);
+            }
+        }
+    }
 }
 
 // The "Engine" Logic
