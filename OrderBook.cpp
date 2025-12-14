@@ -42,6 +42,11 @@ void OrderBook::add_order(int id, bool is_buy, int price, int quantity, OrderTyp
         asks[price].push_back(new_order); // O(log N) insertion
     }
 
+    // Save to the lookup table
+    if (type == OrderType::LIMIT) {
+        order_lookup[id] = {is_buy, price};
+    }
+
     // try to match immediately
     match_orders(); // Check if a trade can happen immediately
 
@@ -91,11 +96,76 @@ void OrderBook::match_orders() {
         seller.quantity -= trade_qty;
 
         // Clean up empty orders
-        if (bidder.quantity == 0) bid_list.erase(bid_list.begin());
-        if (seller.quantity == 0) ask_list.erase(ask_list.begin());
+        if (bidder.quantity == 0) {
+            // Remove from Phone Book
+            if (bidder.type == OrderType::LIMIT) {
+                order_lookup.erase(bidder.id);
+            }
+            bid_list.erase(bid_list.begin());
+        }
+
+        if (seller.quantity == 0) {
+            // Remove from Phone Book
+            if (seller.type == OrderType::LIMIT) {
+                order_lookup.erase(seller.id);
+            }
+            ask_list.erase(ask_list.begin());
+        }
 
         // Clean up empty price levels
         if (bid_list.empty()) bids.erase(best_bid_iter);
         if (ask_list.empty()) asks.erase(best_ask_iter);
+    }
+}
+
+void OrderBook::cancel_order(int id) {
+    // O(1) Lookup
+    if (order_lookup.find(id) == order_lookup.end()) {
+        std::cout << "[Error] Order " << id << " not found.\n";
+        return;
+    }
+
+    // Details of order
+    OrderEntry entry = order_lookup[id];
+    int price = entry.price;
+    bool is_buy = entry.is_buy;
+
+    // Go to specific list 
+    if (is_buy) {
+        // BIDS
+        auto& orders_at_price = bids[price];
+        
+        bool found = false;
+        for (auto it = orders_at_price.begin(); it != orders_at_price.end(); ++it) {
+            if (it->id == id) {
+                orders_at_price.erase(it);
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            if (orders_at_price.empty()) bids.erase(price);
+            order_lookup.erase(id);
+            std::cout << "Order " << id << " cancelled.\n";
+        }
+    } else {
+        // ASKS
+        auto& orders_at_price = asks[price];
+
+        bool found = false;
+        for (auto it = orders_at_price.begin(); it != orders_at_price.end(); ++it) {
+            if (it->id == id) {
+                orders_at_price.erase(it);
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            if (orders_at_price.empty()) asks.erase(price);
+            order_lookup.erase(id);
+            std::cout << "Order " << id << " cancelled.\n";
+        }
     }
 }
