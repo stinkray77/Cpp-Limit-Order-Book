@@ -9,6 +9,7 @@
 *.o
 *.dSYM
 main
+engine
 
 # Ignore data files
 *.csv
