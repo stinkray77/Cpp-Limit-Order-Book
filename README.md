@@ -21,7 +21,10 @@ A simulated high-frequency trading matching engine written in C++.
     
 ## How to Run
 ```bash
-g++ main.cpp -o engine
+# Compile both the Interface and Implementation
+g++ main.cpp OrderBook.cpp -o engine
+
+# Run the engine
 ./engine
 ```
 
